@@ -1,0 +1,13 @@
+androguard==3.2.0
+requests
+qrcode
+pyzbar
+pandas
+numpy
+scikit-learn
+Pillow
+zhipuai
+flask-socketio
+flask
+flask_restx
+eventlet

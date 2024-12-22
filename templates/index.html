@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Domain Analysis</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/test');
+
+            // Event handler for server messages
+            socket.on('my_event', (msg) => {
+                console.log(msg);
+                // Append the message to the message box
+                var messageBox = document.getElementById('messageBox');
+                messageBox.innerHTML += JSON.stringify(msg) + '<br>';
+                // Handle different messages from the server
+                if (msg.msg === 'successfully produce out file, please press display button') {
+                    alert('Analysis complete. Please click the Display button to view results.');
+                }
+            });
+
+            // Function to start analysis
+            function startAnalysis() {
+                fetch('/start', {method: 'GET'})
+                    .then(response => response.text())
+                    .then(data => console.log(data));
+            }
+
+            // Function to upload APK file
+            function uploadAPK() {
+                var formData = new FormData(document.getElementById('uploadForm'));
+                fetch('/upload_apk', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => console.log(data));
+            }
+
+            // Function to display results
+
+            // Function to download results
+            function displayResults() {
+                window.location.href = '/display';
+            }
+
+            // Attach event listeners to buttons
+            document.getElementById('startButton').addEventListener('click', startAnalysis);
+            document.getElementById('uploadButton').addEventListener('click', uploadAPK);
+            document.getElementById('displayButton').addEventListener('click', displayResults);
+            
+        });
+    </script>
+</head>
+<body>
+    <h1>Domain Analysis Tool</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".apk">
+        <button type="button" id="uploadButton">Upload APK</button>
+    </form>
+    <button type="button" id="startButton">Start Analysis</button>
+    <button type="button" id="displayButton">Display Results</button>
+
+    <div id="results"></div>
+    <pre id="messageBox"></pre> <!-- 添加一个用于显示消息的框 -->
+</body>
+</html>
+
+
