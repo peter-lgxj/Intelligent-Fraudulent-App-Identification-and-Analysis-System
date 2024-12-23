@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #6200ea;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 30px auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: #6200ea;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3700b3;
+        }
+
+        button i {
+            margin-right: 8px;
+        }
+
+        #results, #messageBox {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Domain Analysis Tool</h1>
+    </header>
+    <main>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".apk">
+            <button type="button" id="uploadButton"><i class="fas fa-upload"></i> Upload APK</button>
+        </form>
+        <button type="button" id="startButton"><i class="fas fa-play"></i> Start Analysis</button>
+        <button type="button" id="displayButton"><i class="fas fa-eye"></i> Display Results</button>
+
+        <div id="results"></div>
+        <pre id="messageBox"></pre>
+    </main>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io.connect(`${location.protocol}//${document.domain}:${location.port}/test`, {
+                pingTimeout: 86400000, // 24小时
+                pingInterval: 25000,   // 25秒发送一次ping
+                reconnection: true,    // 启用重连
+                reconnectionAttempts: Infinity, // 无限重连次数
+            });
+
+            socket.on('my_event', (msg) => {
+                console.log(msg);
+                const messageBox = document.getElementById('messageBox');
+                messageBox.innerHTML += `${JSON.stringify(msg)}\n`;
+                if (msg.msg === 'successfully produce out file, please press display button') {
+                    alert('Analysis complete. Please click the Display button to view results.');
+                }
+            });
+
+            const startAnalysis = () => {
+                fetch('/start', { method: 'GET' })
+                    .then(response => response.text())
+                    .then(console.log)
+                    .catch(console.error);
+            };
+
+            const uploadAPK = () => {
+                const formData = new FormData(document.getElementById('uploadForm'));
+                fetch('/upload_apk', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(console.log)
+                .catch(console.error);
+            };
+
+            const displayResults = () => {
+                window.location.href = '/display';
+            };
+
+            document.getElementById('startButton').addEventListener('click', startAnalysis);
+            document.getElementById('uploadButton').addEventListener('click', uploadAPK);
+            document.getElementById('displayButton').addEventListener('click', displayResults);
+        });
+    </script>
+</body>
+</html>

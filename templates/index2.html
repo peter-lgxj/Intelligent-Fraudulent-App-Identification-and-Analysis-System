@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>域名分析工具</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        body {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .control-panel {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        #messageBox {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .message {
+            margin: 8px 0;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .success {
+            color: green;
+        }
+        
+        .error {
+            color: red;
+        }
+        
+        .data-block {
+            background-color: #fff;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        button {
+            padding: 8px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>域名分析工具</h1>
+    
+    <div class="control-panel">
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".apk">
+            <button type="button" id="uploadButton">上传 APK</button>
+        </form>
+        <button type="button" id="startButton">开始分析</button>
+        <button type="button" id="displayButton">显示结果</button>
+    </div>
+
+    <div id="messageBox"></div>
+
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // 连接到指定的namespace
+            var socket = io(location.protocol + '//' + document.domain + ':' + location.port + '/test');
+            
+            // 显示消息的函数
+            function addMessage(type, message, data = null) {
+                const messageBox = document.getElementById('messageBox');
+                let html = `
+                    <div class="message ${type}">
+                        <strong>${message}</strong>
+                    `;
+                
+                if (data) {
+                    html += `
+                        <div class="data-block">
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                messageBox.innerHTML += html;
+                messageBox.scrollTop = messageBox.scrollHeight;
+            }
+
+            // 监听所有Socket.IO事件
+            socket.onAny((eventName, ...args) => {
+                console.log(`事件名称: ${eventName}`, args);
+            });
+
+            // 监听连接状态
+            socket.on('connect', () => {
+                addMessage('success', '已连接到服务器');
+            });
+
+            socket.on('disconnect', () => {
+                addMessage('error', '与服务器断开连接');
+            });
+
+            socket.on('connect_error', (error) => {
+                addMessage('error', `连接错误: ${error}`);
+            });
+
+            // 监听my_event事件
+            socket.on('my_event', (data) => {
+                addMessage('success', data.msg, data.data);
+            });
+
+            // 监听my定时事件
+            socket.on('my定时事件', (data) => {
+                addMessage('success', '定时事件', data);
+            });
+
+            // 上传APK文件
+            function uploadAPK() {
+                const formData = new FormData(document.getElementById('uploadForm'));
+                addMessage('success', '开始上传APK文件...');
+                
+                fetch('/upload_apk', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => {
+                    addMessage('success', `APK上传${data === 'success' ? '成功' : '失败'}`);
+                })
+                .catch(error => {
+                    addMessage('error', `上传错误: ${error}`);
+                });
+            }
+
+            // 开始分析
+            function startAnalysis() {
+                addMessage('success', '开始分析...');
+                fetch('/start', {method: 'GET'})
+                    .then(response => response.text())
+                    .then(data => {
+                        addMessage('success', `分析开始: ${data}`);
+                    })
+                    .catch(error => {
+                        addMessage('error', `分析错误: ${error}`);
+                    });
+            }
+
+            // 显示结果
+            function displayResults() {
+                window.location.href = '/display';
+            }
+
+            // 绑定按钮事件
+            document.getElementById('uploadButton').addEventListener('click', uploadAPK);
+            document.getElementById('startButton').addEventListener('click', startAnalysis);
+            document.getElementById('displayButton').addEventListener('click', displayResults);
+        });
+    </script>
+</body>
+</html>
